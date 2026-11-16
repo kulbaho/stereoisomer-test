@@ -5,7 +5,7 @@
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>Stereoisomer Discrimination Task</title>
     
-    <!-- jsPsych Core -->
+    <!-- jsPsych CSS -->
     <script src="https://unpkg.com/jspsych@7.3.4"></script>
     <link href="https://unpkg.com/jspsych@7.3.4/css/jspsych.css" rel="stylesheet" type="text/css" />
     
@@ -13,8 +13,6 @@
     <script src="https://unpkg.com/@jspsych/plugin-html-keyboard-response@1.1.3"></script>
     <script src="https://unpkg.com/@jspsych/plugin-survey-text@1.1.3"></script>
     <script src="https://unpkg.com/@jspsych/plugin-fullscreen@1.2.1"></script>
-
-    <!-- Fixed DataPipe Plugin -->
     <script src="https://unpkg.com/@jspsych-contrib/plugin-pipe@0.4"></script>
 
     <style>
@@ -45,6 +43,7 @@
             height: 100%;
             background: #3b82f6;
             width: 100%;
+            transition: width linear;
         }
         .instruction-box {
             max-width: 600px;
@@ -57,9 +56,8 @@
 <body>
 <script>
     // ----------------------------------------------------
-    // 1. CONFIGURATION & RETAKE GUARD
+    // 1. RETAKE GUARD & EMAIL HASHING UTILITIES
     // ----------------------------------------------------
-    const EXPERIMENT_ID = 'YOUR_DATAPIPE_EXPERIMENT_ID_HERE'; // Paste your DataPipe ID here when ready
     const STORAGE_KEY = 'stereomer_test_completed_v1';
     
     if (localStorage.getItem(STORAGE_KEY) === 'true') {
@@ -83,12 +81,17 @@
     // ----------------------------------------------------
     // 2. MOLECULAR SVG TEMPLATES (Chiral Wedge/Dash Models)
     // ----------------------------------------------------
+    // Standard Tetrahedral representation (Central Carbon C, with Br, Cl, F, H substituents)
     const molIdenticalSVG = `
         <svg width="180" height="180" viewBox="0 0 200 200">
+            <!-- Bonds -->
             <line x1="100" y1="100" x2="100" y2="35" stroke="#1e293b" stroke-width="4" />
             <line x1="100" y1="100" x2="35" y2="140" stroke="#1e293b" stroke-width="4" />
+            <!-- Wedge Bond (Br - pointing forward) -->
             <polygon points="100,100 155,155 165,145" fill="#1e293b" />
+            <!-- Dash Bond (H - pointing backward represented by striped lines) -->
             <line x1="100" y1="100" x2="150" y2="50" stroke="#1e293b" stroke-width="4" stroke-dasharray="5,5" />
+            <!-- Atoms -->
             <circle cx="100" cy="100" r="14" fill="#0f172a" />
             <text x="100" y="105" fill="#ffffff" font-size="14" font-weight="bold" text-anchor="middle">C</text>
             <text x="100" y="25" fill="#ef4444" font-size="16" font-weight="bold" text-anchor="middle">Cl</text>
@@ -98,12 +101,16 @@
         </svg>
     `;
 
+    // Rotated/Enantiomer Stereoisomer SVG
     const molStereomerSVG = `
         <svg width="180" height="180" viewBox="0 0 200 200">
+            <!-- Bonds (Inverted positions) -->
             <line x1="100" y1="100" x2="100" y2="35" stroke="#1e293b" stroke-width="4" />
             <line x1="100" y1="100" x2="35" y2="140" stroke="#1e293b" stroke-width="4" />
+            <!-- Inverted Wedge & Dash -->
             <line x1="100" y1="100" x2="150" y2="50" stroke="#1e293b" stroke-width="4" stroke-dasharray="5,5" />
             <polygon points="100,100 155,155 165,145" fill="#1e293b" />
+            <!-- Atoms -->
             <circle cx="100" cy="100" r="14" fill="#0f172a" />
             <text x="100" y="105" fill="#ffffff" font-size="14" font-weight="bold" text-anchor="middle">C</text>
             <text x="100" y="25" fill="#ef4444" font-size="16" font-weight="bold" text-anchor="middle">Cl</text>
@@ -124,13 +131,14 @@
     ];
 
     // ----------------------------------------------------
-    // 4. INITIALIZE JSPYCH
+    // 4. INITIATE JSPYCH & DATAPIPE
     // ----------------------------------------------------
     const jsPsych = initJsPsych({
         on_finish: function() {
-            // Lock browser after completion (comment this line out while testing!)
+            // Lock browser so they can't retake
             localStorage.setItem(STORAGE_KEY, 'true');
             
+            // Show completion message
             document.body.innerHTML = `
                 <div style="font-family: sans-serif; text-align: center; margin-top: 100px; padding: 20px;">
                     <h2 style="color: #16a34a;">Experiment Completed!</h2>
@@ -143,26 +151,23 @@
 
     let timeline = [];
 
-    // Fullscreen prompt
+    // Fullscreen toggle
     timeline.push({
         type: jsPsychFullscreen,
         fullscreen_mode: true
     });
 
-    // Email Input & GDPR Hash Trial
+    // Email Input & GDPR Consent Trial
+    let participantHash = 'anonymous';
     timeline.push({
         type: jsPsychSurveyText,
         questions: [
-            {
-                prompt: 'Enter your student email address (hashed anonymously in your browser to prevent duplicate entries):',
-                name: 'email',
-                required: true
-            }
+            {prompt: 'Enter your student email address (used only to match pre/post sessions or check duplicates):', name: 'email', required: true}
         ],
         button_label: 'Start Experiment',
         on_finish: async function(data) {
             const rawEmail = data.response.email.trim().toLowerCase();
-            const participantHash = await sha256(rawEmail);
+            participantHash = await sha256(rawEmail);
             jsPsych.data.addProperties({ participant_hash: participantHash });
         }
     });
@@ -174,18 +179,18 @@
             <div class="instruction-box">
                 <h2>Stereoisomer Discrimination Task</h2>
                 <p>You will be presented with pairs of 3D molecular structures.</p>
-                <p>Your task is to determine whether the two molecules are <b>IDENTICAL</b> (superimposable) or <b>STEREOISOMERS</b> (non-superimposable mirror images).</p>
+                <p>Your task is to determine whether the two molecules are <b>IDENTICAL</b> (can be rotated to match) or <b>STEREOISOMERS</b> (non-superimposable mirror images / enantiomers).</p>
                 <ul>
                     <li>Press <b>[ I ]</b> if they are <b>Identical</b></li>
-                    <li>Press <b>[ S ]</b> if they are <b>Stereoisomers</b></li>
+                    <li>Press <b>[ S ]</b> if they are a <b>Stereoisomer</b></li>
                 </ul>
-                <p>You have <b>5 seconds</b> per pair. Both accuracy and reaction time are recorded.</p>
+                <p>You have <b>5 seconds</b> per pair. Accuracy and reaction time are both recorded.</p>
                 <p style="text-align: center; margin-top: 30px;"><b style="color: #2563eb;">Press any key to begin.</b></p>
             </div>
         `
     });
 
-    // Experimental Trials
+    // Generate Experimental Trials dynamically
     trialsData.forEach((trial) => {
         timeline.push({
             type: jsPsychHtmlKeyboardResponse,
@@ -205,34 +210,39 @@
                 </div>
             `,
             choices: ['i', 's'],
-            trial_duration: 5000,
+            trial_duration: 5000, // 5 seconds hard time limit
             data: {
                 task: 'stereoisomer_trial',
                 trial_index: trial.id,
                 correct_answer: trial.answer
             },
             on_load: function() {
+                // Smooth countdown animation bar
                 const fill = document.getElementById('dynamic-timer');
                 if (fill) {
+                    fill.style.transition = 'width 5000s linear'; // fallback
                     fill.style.transition = 'width 5000ms linear';
                     setTimeout(() => { fill.style.width = '0%'; }, 50);
                 }
             },
             on_finish: function(data) {
+                // Evaluate accuracy
                 if (data.response === null) {
                     data.accuracy = false;
                     data.timeout = true;
                 } else {
                     data.timeout = false;
-                    data.accuracy = (data.response.toLowerCase() === trial.correct_key);
+                    data.accuracy = (data.response === trial.correct_key);
                 }
             }
         });
     });
 
     // ----------------------------------------------------
-    // 5. DATAPIPE EXPORT TRIAL (Active once EXPERIMENT_ID is set)
+    // 5. DATAPIPE EXPORT TRIAL (Works before & after setup)
     // ----------------------------------------------------
+    const EXPERIMENT_ID = 'YOUR_DATAPIPE_EXPERIMENT_ID_HERE';
+
     if (EXPERIMENT_ID !== 'YOUR_DATAPIPE_EXPERIMENT_ID_HERE') {
         timeline.push({
             type: jsPsychPipe,
@@ -242,12 +252,6 @@
             data_string: () => jsPsych.data.get().csv()
         });
     }
-
-    // Exit Fullscreen cleanly before showing completion screen
-    timeline.push({
-        type: jsPsychFullscreen,
-        fullscreen_mode: false
-    });
 
     // Run the experiment
     jsPsych.run(timeline);
