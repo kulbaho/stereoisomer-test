@@ -1,0 +1,802 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>Stereoisomer Discrimination Task — jsPsych Demo</title>
+  <script src="https://cdn.tailwindcss.com"></script>
+  <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&family=JetBrains+Mono:wght@400;500&display=swap" rel="stylesheet">
+  <style>
+    body {
+      font-family: 'Inter', -apple-system, BlinkMacSystemFont, sans-serif;
+      background-color: #f8fafc;
+      color: #0f172a;
+    }
+    .mono {
+      font-family: 'JetBrains Mono', monospace;
+    }
+    /* Smooth countdown bar transition */
+    #timer-bar {
+      transition: width 50ms linear, background-color 200ms ease;
+    }
+    /* Keycap styling for keyboard hints */
+    kbd {
+      display: inline-flex;
+      align-items: center;
+      justify-content: center;
+      min-width: 1.65rem;
+      height: 1.65rem;
+      padding: 0 0.45rem;
+      font-family: 'JetBrains Mono', monospace;
+      font-size: 0.78rem;
+      font-weight: 600;
+      color: #334155;
+      background-color: #f1f5f9;
+      border: 1px solid #cbd5e1;
+      border-bottom-width: 2px;
+      border-radius: 0.375rem;
+    }
+  </style>
+</head>
+<body class="min-h-screen flex flex-col justify-between antialiased selection:bg-indigo-100 selection:text-indigo-900">
+
+  <!-- Top Academic Experiment Header -->
+  <header class="w-full bg-white border-b border-slate-200 px-4 py-3 sm:px-8">
+    <div class="max-w-5xl mx-auto flex flex-wrap items-center justify-between gap-2">
+      <div class="flex items-center gap-2.5">
+        <div class="w-2.5 h-2.5 rounded-full bg-indigo-600"></div>
+        <span class="font-semibold text-sm tracking-tight text-slate-800">CHEM-COGNITION LAB // STEREOISOMER DISCRIMINATION TASK</span>
+      </div>
+      <div class="flex items-center gap-4 text-xs text-slate-500">
+        <span id="header-status" class="mono bg-slate-100 px-2.5 py-1 rounded-md border border-slate-200">STAGE: GATEKEEPER</span>
+      </div>
+    </div>
+  </header>
+
+  <!-- Main Experiment Container -->
+  <main class="flex-grow flex items-center justify-center p-4 sm:p-6">
+    <div class="w-full max-w-4xl">
+
+      <!-- =========================================================
+           SCREEN 0: ALREADY COMPLETED (LOCALSTORAGE LOCK)
+      ========================================================= -->
+      <section id="screen-locked" class="hidden bg-white rounded-2xl shadow-sm border border-slate-200 p-8 sm:p-10 text-center max-w-xl mx-auto">
+        <div class="w-12 h-12 rounded-full bg-amber-50 border border-amber-200 text-amber-600 flex items-center justify-center mx-auto mb-4">
+          <svg class="w-6 h-6" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24">
+            <path stroke-linecap="round" stroke-linejoin="round" d="M12 15v2m-6 4h12a2 2 0 002-2v-6a2 2 0 00-2-2H6a2 2 0 00-2 2v6a2 2 0 002 2zm10-10V7a4 4 0 00-8 0v4h8z" />
+          </svg>
+        </div>
+        <h1 class="text-xl font-bold text-slate-900 mb-2">Attempt Already Recorded</h1>
+        <p class="text-sm text-slate-600 leading-relaxed mb-6">
+          Our browser check indicates that you have already completed this stereochemistry assessment. To preserve data integrity, only one submission is permitted per participant.
+        </p>
+        <div class="bg-slate-50 rounded-xl p-3.5 border border-slate-200 text-xs text-slate-500 mb-6 mono break-all">
+          Stored Participant Hash: <span id="locked-hash-display" class="text-slate-700 font-medium">N/A</span>
+        </div>
+        <button onclick="resetDemoLock()" class="text-xs font-medium text-indigo-600 hover:text-indigo-800 underline underline-offset-4">
+          [Demo Mode] Reset Browser Lock &amp; Restart
+        </button>
+      </section>
+
+      <!-- =========================================================
+           SCREEN 1: PARTICIPANT GATEKEEPER & SHA-256 HASHING
+      ========================================================= -->
+      <section id="screen-gatekeeper" class="bg-white rounded-2xl shadow-sm border border-slate-200 p-6 sm:p-10 max-w-xl mx-auto">
+        <div class="mb-6">
+          <span class="inline-block text-xs font-semibold uppercase tracking-wider text-indigo-600 bg-indigo-50 px-2.5 py-1 rounded-md mb-2">Participant Registration</span>
+          <h1 class="text-2xl font-bold text-slate-900 tracking-tight">3D Molecular Mental Rotation</h1>
+          <p class="text-sm text-slate-600 mt-1.5 leading-relaxed">
+            Please enter your institutional email address to begin. Your email is hashed locally in your browser using <span class="mono text-xs bg-slate-100 px-1.5 py-0.5 rounded">SHA-256</span> before any data is logged.
+          </p>
+        </div>
+
+        <form id="gatekeeper-form" class="space-y-4" novalidate>
+          <div>
+            <label for="student-email" class="block text-sm font-medium text-slate-700 mb-1.5">Student / University Email</label>
+            <input
+              type="email"
+              id="student-email"
+              placeholder="jan.janssens@student.university.edu"
+              autocomplete="email"
+              required
+              class="w-full px-4 py-2.5 rounded-xl border border-slate-300 text-sm focus:outline-none focus:ring-2 focus:ring-indigo-500 focus:border-indigo-500 transition"
+            />
+            <p id="email-error" class="hidden text-xs text-rose-600 mt-1.5 font-medium">Please enter a valid institutional email address.</p>
+          </div>
+
+          <!-- Live GDPR Hash Preview Box -->
+          <div class="bg-slate-50 rounded-xl p-3.5 border border-slate-200">
+            <div class="flex items-center justify-between mb-1">
+              <span class="text-xs font-semibold text-slate-600">GDPR-Safe Participant ID (SHA-256 Preview)</span>
+              <span class="text-[11px] text-emerald-700 bg-emerald-50 border border-emerald-200 px-2 py-0.5 rounded-full font-medium">Client-Side Only</span>
+            </div>
+            <p id="hash-preview" class="mono text-xs text-slate-400 break-all">
+              Type an email above to preview your anonymized hash...
+            </p>
+          </div>
+
+          <div class="pt-2">
+            <button type="submit" class="w-full bg-indigo-600 hover:bg-indigo-700 active:bg-indigo-800 text-white font-semibold text-sm py-3 px-4 rounded-xl shadow-sm transition cursor-pointer">
+              Continue to Instructions &rarr;
+            </button>
+          </div>
+        </form>
+      </section>
+
+      <!-- =========================================================
+           SCREEN 2: INSTRUCTIONS & LEGEND
+      ========================================================= -->
+      <section id="screen-instructions" class="hidden bg-white rounded-2xl shadow-sm border border-slate-200 p-6 sm:p-10 max-w-3xl mx-auto">
+        <div class="mb-6">
+          <span class="inline-block text-xs font-semibold uppercase tracking-wider text-indigo-600 bg-indigo-50 px-2.5 py-1 rounded-md mb-2">Protocol &amp; Rules</span>
+          <h2 class="text-2xl font-bold text-slate-900 tracking-tight">Task Instructions</h2>
+        </div>
+
+        <div class="space-y-4 text-sm text-slate-600 leading-relaxed">
+          <p>
+            On each trial, you will see <strong>two 3D tetrahedral molecules</strong> side by side. Both molecules share the exact same chemical formula and connectivity, but differ in their spatial orientation or configuration.
+          </p>
+          <p>
+            Your goal is to mentally rotate the molecules and decide within <strong>5.0 seconds</strong> whether they represent the <strong>same compound (Identical)</strong> or <strong>non-superimposable mirror images (Stereoisomers / Enantiomers)</strong>.
+          </p>
+
+          <!-- Atom & Stereochemistry Legend -->
+          <div class="bg-slate-50 border border-slate-200 rounded-xl p-4 my-4">
+            <h3 class="text-xs font-semibold uppercase tracking-wider text-slate-700 mb-3">3D Representation &amp; Atom Key</h3>
+            <div class="grid grid-cols-2 sm:grid-cols-4 gap-3 text-xs">
+              <div class="flex items-center gap-2">
+                <span class="w-4 h-4 rounded-full bg-slate-700 inline-block shadow-inner"></span>
+                <span><strong>C</strong> (Chiral Carbon)</span>
+              </div>
+              <div class="flex items-center gap-2">
+                <span class="w-4 h-4 rounded-full bg-slate-100 border border-slate-400 inline-block"></span>
+                <span><strong>H</strong> (Hydrogen)</span>
+              </div>
+              <div class="flex items-center gap-2">
+                <span class="w-4 h-4 rounded-full bg-emerald-500 inline-block"></span>
+                <span><strong>Cl</strong> (Chlorine)</span>
+              </div>
+              <div class="flex items-center gap-2">
+                <span class="w-4 h-4 rounded-full bg-rose-700 inline-block"></span>
+                <span><strong>Br</strong> (Bromine)</span>
+              </div>
+              <div class="flex items-center gap-2">
+                <span class="w-4 h-4 rounded-full bg-cyan-500 inline-block"></span>
+                <span><strong>F</strong> (Fluorine)</span>
+              </div>
+              <div class="flex items-center gap-2">
+                <span class="w-4 h-4 rounded-full bg-red-500 inline-block"></span>
+                <span><strong>OH</strong> (Hydroxyl)</span>
+              </div>
+              <div class="flex items-center gap-2">
+                <span class="w-4 h-4 rounded-full bg-amber-500 inline-block"></span>
+                <span><strong>CH₃</strong> (Methyl)</span>
+              </div>
+              <div class="flex items-center gap-2">
+                <span class="font-bold text-slate-800">&#9650; / &#9776;</span>
+                <span>Wedge (Front) / Dash (Back)</span>
+              </div>
+            </div>
+          </div>
+
+          <!-- Key Mapping Box -->
+          <div class="grid grid-cols-1 sm:grid-cols-2 gap-3 pt-1">
+            <div class="border border-slate-200 rounded-xl p-3.5 flex items-center justify-between bg-white">
+              <div>
+                <div class="font-semibold text-slate-900">Identical Molecule</div>
+                <div class="text-xs text-slate-500">Same configuration (rotatable)</div>
+              </div>
+              <div class="flex items-center gap-1.5">
+                <span class="text-xs text-slate-400">Press</span>
+                <kbd>Y</kbd>
+              </div>
+            </div>
+            <div class="border border-slate-200 rounded-xl p-3.5 flex items-center justify-between bg-white">
+              <div>
+                <div class="font-semibold text-slate-900">Stereoisomer</div>
+                <div class="text-xs text-slate-500">Non-superimposable enantiomer</div>
+              </div>
+              <div class="flex items-center gap-1.5">
+                <span class="text-xs text-slate-400">Press</span>
+                <kbd>N</kbd>
+              </div>
+            </div>
+          </div>
+        </div>
+
+        <div class="mt-8 flex items-center justify-between border-t border-slate-100 pt-5">
+          <span class="text-xs text-slate-500">6 trials &bull; 5.0s deadline per trial</span>
+          <button id="start-trials-btn" class="bg-indigo-600 hover:bg-indigo-700 active:bg-indigo-800 text-white font-semibold text-sm py-3 px-6 rounded-xl shadow-sm transition cursor-pointer">
+            Start Experiment &rarr;
+          </button>
+        </div>
+      </section>
+
+      <!-- =========================================================
+           SCREEN 3: ACTIVE EXPERIMENT TRIALS (FIXATION + STIMULUS)
+      ========================================================= -->
+      <section id="screen-trial" class="hidden bg-white rounded-2xl shadow-sm border border-slate-200 overflow-hidden">
+        <!-- Top Trial Progress & Countdown Bar -->
+        <div class="bg-slate-50 border-b border-slate-200 px-6 py-3 flex items-center justify-between text-xs font-medium text-slate-600">
+          <span id="trial-counter">Trial 1 of 6</span>
+          <span id="trial-formula" class="mono text-slate-500">CHBrClF</span>
+          <span id="timer-text" class="mono text-slate-700 font-semibold">5.0s</span>
+        </div>
+        <div class="w-full h-1.5 bg-slate-100">
+          <div id="timer-bar" class="h-full bg-indigo-600 w-full"></div>
+        </div>
+
+        <!-- Fixation Cross View (500ms ISI) -->
+        <div id="fixation-container" class="hidden h-[360px] sm:h-[400px] flex flex-col items-center justify-center">
+          <div class="text-5xl font-light text-slate-400 select-none">+</div>
+          <span class="text-xs text-slate-400 mt-3">Focus</span>
+        </div>
+
+        <!-- Stimulus Comparison Canvas -->
+        <div id="stimulus-container" class="p-6 sm:p-8">
+          <p class="text-center text-sm font-medium text-slate-700 mb-4">
+            Are these two molecules <strong>identical</strong>?
+          </p>
+
+          <div class="grid grid-cols-1 sm:grid-cols-2 gap-4 sm:gap-6 items-center">
+            <!-- Left Molecule Card -->
+            <div class="bg-slate-50/70 border border-slate-200 rounded-2xl p-4 flex flex-col items-center justify-center">
+              <span class="text-[11px] font-semibold uppercase tracking-wider text-slate-400 mb-1">Structure A</span>
+              <div id="mol-left" class="w-full max-w-[260px] h-[220px] flex items-center justify-center"></div>
+            </div>
+
+            <!-- Right Molecule Card -->
+            <div class="bg-slate-50/70 border border-slate-200 rounded-2xl p-4 flex flex-col items-center justify-center">
+              <span class="text-[11px] font-semibold uppercase tracking-wider text-slate-400 mb-1">Structure B</span>
+              <div id="mol-right" class="w-full max-w-[260px] h-[220px] flex items-center justify-center"></div>
+            </div>
+          </div>
+
+          <!-- Response Buttons (Mouse/Touch + Keyboard Sync) -->
+          <div class="mt-6 grid grid-cols-2 gap-4 max-w-lg mx-auto">
+            <button
+              id="btn-yes"
+              onclick="handleResponse('identical')"
+              class="flex items-center justify-center gap-2.5 py-3.5 px-4 rounded-xl border-2 border-slate-200 hover:border-indigo-600 hover:bg-indigo-50/50 active:bg-indigo-100 font-semibold text-sm text-slate-800 transition cursor-pointer"
+            >
+              <kbd>Y</kbd>
+              <span>Yes — Identical</span>
+            </button>
+            <button
+              id="btn-no"
+              onclick="handleResponse('stereoisomer')"
+              class="flex items-center justify-center gap-2.5 py-3.5 px-4 rounded-xl border-2 border-slate-200 hover:border-indigo-600 hover:bg-indigo-50/50 active:bg-indigo-100 font-semibold text-sm text-slate-800 transition cursor-pointer"
+            >
+              <kbd>N</kbd>
+              <span>No — Stereoisomer</span>
+            </button>
+          </div>
+        </div>
+      </section>
+
+      <!-- =========================================================
+           SCREEN 4: RESULTS SUMMARY & DATAPIPE CSV EXPORT
+      ========================================================= -->
+      <section id="screen-results" class="hidden bg-white rounded-2xl shadow-sm border border-slate-200 p-6 sm:p-10">
+        <div class="flex flex-wrap items-start justify-between gap-4 border-b border-slate-200 pb-6 mb-6">
+          <div>
+            <span class="inline-block text-xs font-semibold uppercase tracking-wider text-emerald-700 bg-emerald-50 border border-emerald-200 px-2.5 py-1 rounded-md mb-2">Session Complete &bull; Browser Locked</span>
+            <h2 class="text-2xl font-bold text-slate-900 tracking-tight">Experiment Results &amp; Data Log</h2>
+            <p class="text-xs text-slate-500 mt-1 mono break-all">
+              Participant Hash: <span id="result-hash" class="text-slate-800 font-semibold"></span>
+            </p>
+          </div>
+
+          <div class="flex flex-wrap gap-2.5">
+            <button
+              onclick="downloadCSV()"
+              class="bg-indigo-600 hover:bg-indigo-700 text-white text-xs font-semibold py-2.5 px-4 rounded-xl shadow-sm flex items-center gap-2 transition cursor-pointer"
+            >
+              <svg class="w-4 h-4" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24">
+                <path stroke-linecap="round" stroke-linejoin="round" d="M4 16v1a3 3 0 003 3h10a3 3 0 003-3v-1m-4-4l-4 4m0 0l-4-4m4 4V4" />
+              </svg>
+              Download CSV (DataPipe Format)
+            </button>
+            <button
+              onclick="resetDemoLock()"
+              class="bg-slate-100 hover:bg-slate-200 text-slate-700 text-xs font-semibold py-2.5 px-4 rounded-xl border border-slate-300 transition cursor-pointer"
+            >
+              Reset Lock &amp; Retake
+            </button>
+          </div>
+        </div>
+
+        <!-- Summary Metric Cards -->
+        <div class="grid grid-cols-1 sm:grid-cols-3 gap-4 mb-6">
+          <div class="bg-slate-50 border border-slate-200 rounded-xl p-4">
+            <div class="text-xs font-medium text-slate-500">Overall Accuracy</div>
+            <div id="metric-accuracy" class="text-2xl font-bold text-slate-900 mt-1">--%</div>
+          </div>
+          <div class="bg-slate-50 border border-slate-200 rounded-xl p-4">
+            <div class="text-xs font-medium text-slate-500">Mean Reaction Time</div>
+            <div id="metric-rt" class="text-2xl font-bold text-slate-900 mt-1">-- ms</div>
+          </div>
+          <div class="bg-slate-50 border border-slate-200 rounded-xl p-4">
+            <div class="text-xs font-medium text-slate-500">Valid Responses</div>
+            <div id="metric-valid" class="text-2xl font-bold text-slate-900 mt-1">-- / 6</div>
+          </div>
+        </div>
+
+        <!-- Trial-by-Trial Data Table -->
+        <div class="overflow-x-auto border border-slate-200 rounded-xl">
+          <table class="w-full text-left border-collapse text-xs">
+            <thead>
+              <tr class="bg-slate-50 border-b border-slate-200 text-slate-600 font-semibold">
+                <th class="py-3 px-4">Trial</th>
+                <th class="py-3 px-4">Molecule Pair</th>
+                <th class="py-3 px-4">True Relation</th>
+                <th class="py-3 px-4">Response</th>
+                <th class="py-3 px-4">Correct</th>
+                <th class="py-3 px-4 text-right">RT (ms)</th>
+              </tr>
+            </thead>
+            <tbody id="results-table-body" class="divide-y divide-slate-100 mono">
+              <!-- Populated dynamically -->
+            </tbody>
+          </table>
+        </div>
+      </section>
+
+    </div>
+  </main>
+
+  <!-- Subtle Footer with Demo Controls -->
+  <footer class="w-full border-t border-slate-200 bg-white py-3 px-4 sm:px-8 text-xs text-slate-400">
+    <div class="max-w-5xl mx-auto flex flex-wrap items-center justify-between gap-2">
+      <span>jsPsych Architecture Prototype &bull; Client-Side Web Crypto + LocalStorage Guard</span>
+      <button onclick="resetDemoLock()" class="text-slate-500 hover:text-indigo-600 underline underline-offset-2 cursor-pointer">
+        Reset Demo Lock
+      </button>
+    </div>
+  </footer>
+
+  <!-- =========================================================
+       APPLICATION LOGIC & 3D MOLECULE SVG RENDERER
+  ========================================================= -->
+  <script>
+    /**
+     * CONFIGURATION & STATE
+     */
+    const STORAGE_KEY_LOCK = 'stereoisomer_demo_completed_v1';
+    const STORAGE_KEY_HASH = 'stereoisomer_demo_hash_v1';
+    const TRIAL_TIME_LIMIT_MS = 5000; // 5 seconds per trial
+    const FIXATION_DURATION_MS = 500; // 500ms fixation cross
+
+    let participantHash = '';
+    let currentTrialIndex = 0;
+    let trialStartTime = 0;
+    let timerInterval = null;
+    let trialTimeout = null;
+    let isAcceptingInput = false;
+    let experimentResults = [];
+
+    /**
+     * ATOM VISUAL STYLING PALETTE (CPK-inspired high-contrast colors)
+     */
+    const ATOM_STYLES = {
+      C:   { fill: '#334155', stroke: '#0f172a', text: '#ffffff', radius: 18 },
+      H:   { fill: '#f8fafc', stroke: '#64748b', text: '#0f172a', radius: 14 },
+      Cl:  { fill: '#10b981', stroke: '#047857', text: '#ffffff', radius: 17 },
+      Br:  { fill: '#be123c', stroke: '#881337', text: '#ffffff', radius: 18 },
+      F:   { fill: '#06b6d4', stroke: '#0e7490', text: '#ffffff', radius: 16 },
+      OH:  { fill: '#ef4444', stroke: '#991b1b', text: '#ffffff', radius: 17 },
+      CH3: { fill: '#f59e0b', stroke: '#b45309', text: '#ffffff', radius: 18 }
+    };
+
+    /**
+     * SCIENTIFICALLY ACCURATE TETRAHEDRAL STEREOCHEMISTRY DATASET
+     *
+     * Geometry convention for our 3D perspective template:
+     *   - Center (130, 110): Chiral Carbon (C)
+     *   - Top (130, 32): In-plane bond (up)
+     *   - Left-Down (55, 145): In-plane bond (down-left)
+     *   - Right-Down-Front (195, 155): Solid Wedge (pointing TOWARD viewer)
+     *   - Right-Back (195, 85): Dashed Wedge (pointing AWAY from viewer)
+     *
+     * Chirality Rule (Cyclic order of [Left, FrontWedge, BackDash] when Top is fixed):
+     *   Even permutations of (Left, Front, Back) preserve absolute R/S configuration (IDENTICAL).
+     *   Odd permutations (swapping any two groups) invert the stereocenter (STEREOISOMER / ENANTIOMER).
+     */
+    const TRIALS = [
+      {
+        id: 1,
+        label: 'Bromochlorofluoromethane (CHBrClF)',
+        relation: 'identical', // Even permutation: Top=H fixed; (Br, Cl, F) -> (Cl, F, Br) = 120° rotation around C-H axis!
+        left:  { top: 'H', left: 'Br', front: 'Cl', back: 'F' },
+        right: { top: 'H', left: 'Cl', front: 'F',  back: 'Br' }
+      },
+      {
+        id: 2,
+        label: 'Bromochlorofluoromethane (CHBrClF)',
+        relation: 'stereoisomer', // Odd permutation: Top=H fixed; Front(Cl) and Back(F) swapped -> Mirror image enantiomer!
+        left:  { top: 'H', left: 'Br', front: 'Cl', back: 'F' },
+        right: { top: 'H', left: 'Br', front: 'F',  back: 'Cl' }
+      },
+      {
+        id: 3,
+        label: '2-Butanol / Ethanol-d1 Analog (CH(OH)(CH3)Br)',
+        relation: 'stereoisomer', // Odd permutation: Top=OH fixed; Left(CH3) and Front(H) swapped -> Enantiomer!
+        left:  { top: 'OH', left: 'CH3', front: 'H',   back: 'Br' },
+        right: { top: 'OH', left: 'H',   front: 'CH3', back: 'Br' }
+      },
+      {
+        id: 4,
+        label: '1-Bromo-1-chloroethane (CHBrCl(CH3))',
+        relation: 'identical', // Even permutation: Top=CH3 fixed; (H, Br, Cl) -> (Cl, H, Br) = 120° rotation!
+        left:  { top: 'CH3', left: 'H',  front: 'Br', back: 'Cl' },
+        right: { top: 'CH3', left: 'Cl', front: 'H',  back: 'Br' }
+      },
+      {
+        id: 5,
+        label: 'Chlorofluoroethanol (CH(OH)ClF)',
+        relation: 'identical', // Even permutation: Top=F fixed; (OH, H, Cl) -> (H, Cl, OH) = 120° rotation!
+        left:  { top: 'F', left: 'OH', front: 'H',  back: 'Cl' },
+        right: { top: 'F', left: 'H',  front: 'Cl', back: 'OH' }
+      },
+      {
+        id: 6,
+        label: '1-Fluoro-1-iodoethane Analog (CHFBr(CH3))',
+        relation: 'stereoisomer', // Odd permutation: Top=F fixed; Left(CH3) and Back(H) swapped -> Enantiomer!
+        left:  { top: 'F', left: 'CH3', front: 'Br', back: 'H' },
+        right: { top: 'F', left: 'H',   front: 'Br', back: 'CH3' }
+      }
+    ];
+
+    /**
+     * RENDERS A 3D TETRAHEDRAL MOLECULE AS CRISP INLINE SVG
+     */
+    function renderMoleculeSVG(config) {
+      const cx = 130, cy = 112;
+      const coords = {
+        top:   { x: 130, y: 32 },
+        left:  { x: 52,  y: 148 },
+        front: { x: 198, y: 162 },
+        back:  { x: 196, y: 78 }
+      };
+
+      // Generate hashed wedge lines between center and back substituent
+      let dashLines = '';
+      const steps = 6;
+      for (let i = 1; i <= steps; i++) {
+        const t = i / (steps + 1);
+        const mx = cx + (coords.back.x - cx) * t;
+        const my = cy + (coords.back.y - cy) * t;
+        // Perpendicular vector
+        const dx = coords.back.x - cx;
+        const dy = coords.back.y - cy;
+        const len = Math.hypot(dx, dy);
+        const px = -dy / len;
+        const py = dx / len;
+        const halfWidth = 2 + t * 6.5;
+        dashLines += `<line x1="${(mx - px * halfWidth).toFixed(1)}" y1="${(my - py * halfWidth).toFixed(1)}"
+                            x2="${(mx + px * halfWidth).toFixed(1)}" y2="${(my + py * halfWidth).toFixed(1)}"
+                            stroke="#64748b" stroke-width="2" stroke-linecap="round" />`;
+      }
+
+      // Solid wedge triangle coordinates (pointing toward front substituent)
+      const fdx = coords.front.x - cx;
+      const fdy = coords.front.y - cy;
+      const flen = Math.hypot(fdx, fdy);
+      const fpx = -fdy / flen;
+      const fpy = fdx / flen;
+      const wedgeWidth = 9;
+      const wx1 = (coords.front.x - fdx * 0.18 + fpx * wedgeWidth).toFixed(1);
+      const wy1 = (coords.front.y - fdy * 0.18 + fpy * wedgeWidth).toFixed(1);
+      const wx2 = (coords.front.x - fdx * 0.18 - fpx * wedgeWidth).toFixed(1);
+      const wy2 = (coords.front.y - fdy * 0.18 - fpy * wedgeWidth).toFixed(1);
+
+      const drawAtom = (symbol, pos, isFront = false, isBack = false) => {
+        const style = ATOM_STYLES[symbol] || ATOM_STYLES.C;
+        const r = isFront ? style.radius + 2 : isBack ? style.radius - 2 : style.radius;
+        const fontSize = symbol.length > 2 ? 10 : 12;
+        return `
+          <g>
+            <circle cx="${pos.x}" cy="${pos.y}" r="${r}" fill="${style.fill}" stroke="${style.stroke}" stroke-width="2" />
+            <!-- Specular 3D highlight -->
+            <circle cx="${pos.x - r * 0.3}" cy="${pos.y - r * 0.3}" r="${r * 0.25}" fill="#ffffff" fill-opacity="0.32" />
+            <text x="${pos.x}" y="${pos.y}" dy="0.35em" text-anchor="middle" fill="${style.text}"
+                  font-family="Inter, sans-serif" font-weight="700" font-size="${fontSize}px">${symbol}</text>
+          </g>
+        `;
+      };
+
+      return `
+        <svg viewBox="0 0 260 210" class="w-full h-full overflow-visible select-none">
+          <!-- Back Dashed Bond (drawn first so it sits behind central carbon) -->
+          ${dashLines}
+          ${drawAtom(config.back, coords.back, false, true)}
+
+          <!-- In-plane Bonds -->
+          <line x1="${cx}" y1="${cy}" x2="${coords.top.x}" y2="${coords.top.y}" stroke="#334155" stroke-width="3.5" stroke-linecap="round" />
+          <line x1="${cx}" y1="${cy}" x2="${coords.left.x}" y2="${coords.left.y}" stroke="#334155" stroke-width="3.5" stroke-linecap="round" />
+
+          <!-- Central Chiral Carbon -->
+          ${drawAtom('C', { x: cx, y: cy })}
+
+          <!-- Top & Left In-Plane Atoms -->
+          ${drawAtom(config.top, coords.top)}
+          ${drawAtom(config.left, coords.left)}
+
+          <!-- Front Solid Wedge Bond -->
+          <polygon points="${cx},${cy} ${wx1},${wy1} ${wx2},${wy2}" fill="#0f172a" />
+          ${drawAtom(config.front, coords.front, true, false)}
+        </svg>
+      `;
+    }
+
+    /**
+     * CLIENT-SIDE SHA-256 HASHING (Web Crypto API)
+     */
+    async function computeSHA256(text) {
+      const normalized = text.trim().toLowerCase();
+      const encoder = new TextEncoder();
+      const data = encoder.encode(normalized);
+      const hashBuffer = await crypto.subtle.digest('SHA-256', data);
+      const hashArray = Array.from(new Uint8Array(hashBuffer));
+      return hashArray.map(b => b.toString(16).padStart(2, '0')).join('');
+    }
+
+    /**
+     * SCREEN NAVIGATION HELPER
+     */
+    function showScreen(screenId, stageLabel) {
+      ['screen-locked', 'screen-gatekeeper', 'screen-instructions', 'screen-trial', 'screen-results'].forEach(id => {
+        document.getElementById(id).classList.add('hidden');
+      });
+      document.getElementById(screenId).classList.remove('hidden');
+      document.getElementById('header-status').textContent = `STAGE: ${stageLabel}`;
+    }
+
+    /**
+     * INITIALIZATION & LOCALSTORAGE GATEKEEPER CHECK
+     */
+    window.addEventListener('DOMContentLoaded', () => {
+      const isLocked = localStorage.getItem(STORAGE_KEY_LOCK) === 'true';
+      if (isLocked) {
+        const savedHash = localStorage.getItem(STORAGE_KEY_HASH) || 'Unknown';
+        document.getElementById('locked-hash-display').textContent = savedHash;
+        showScreen('screen-locked', 'LOCKED (ALREADY COMPLETED)');
+      } else {
+        showScreen('screen-gatekeeper', 'PARTICIPANT GATEKEEPER');
+      }
+
+      // Live SHA-256 hash preview as student types email
+      const emailInput = document.getElementById('student-email');
+      const hashPreview = document.getElementById('hash-preview');
+      emailInput.addEventListener('input', async () => {
+        const val = emailInput.value.trim();
+        document.getElementById('email-error').classList.add('hidden');
+        if (!val) {
+          hashPreview.textContent = 'Type an email above to preview your anonymized hash...';
+          hashPreview.classList.replace('text-slate-800', 'text-slate-400');
+          return;
+        }
+        const hash = await computeSHA256(val);
+        hashPreview.textContent = hash;
+        hashPreview.classList.replace('text-slate-400', 'text-slate-800');
+      });
+
+      // Handle Gatekeeper Form Submission
+      document.getElementById('gatekeeper-form').addEventListener('submit', async (e) => {
+        e.preventDefault();
+        const emailVal = emailInput.value.trim();
+        const emailRegex = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
+        if (!emailRegex.test(emailVal)) {
+          document.getElementById('email-error').classList.remove('hidden');
+          emailInput.focus();
+          return;
+        }
+        participantHash = await computeSHA256(emailVal);
+        showScreen('screen-instructions', 'INSTRUCTIONS');
+      });
+
+      // Start Trials Button
+      document.getElementById('start-trials-btn').addEventListener('click', () => {
+        currentTrialIndex = 0;
+        experimentResults = [];
+        showScreen('screen-trial', 'ACTIVE EXPERIMENT');
+        runNextTrial();
+      });
+
+      // Keyboard listener for 'Y' and 'N' responses
+      window.addEventListener('keydown', (e) => {
+        if (!isAcceptingInput) return;
+        const key = e.key.toLowerCase();
+        if (key === 'y') {
+          e.preventDefault();
+          handleResponse('identical');
+        } else if (key === 'n') {
+          e.preventDefault();
+          handleResponse('stereoisomer');
+        }
+      });
+    });
+
+    /**
+     * EXPERIMENT TRIAL TIMELINE ENGINE
+     */
+    function runNextTrial() {
+      if (currentTrialIndex >= TRIALS.length) {
+        finishExperiment();
+        return;
+      }
+
+      const trial = TRIALS[currentTrialIndex];
+      isAcceptingInput = false;
+
+      // Update header indicators
+      document.getElementById('trial-counter').textContent = `Trial ${currentTrialIndex + 1} of ${TRIALS.length}`;
+      document.getElementById('trial-formula').textContent = trial.label.split('(')[1]?.replace(')', '') || '';
+      document.getElementById('timer-text').textContent = `${(TRIAL_TIME_LIMIT_MS / 1000).toFixed(1)}s`;
+      const timerBar = document.getElementById('timer-bar');
+      timerBar.style.width = '100%';
+      timerBar.className = 'h-full bg-indigo-600 w-full';
+
+      // Show Fixation Cross first
+      document.getElementById('stimulus-container').classList.add('hidden');
+      document.getElementById('fixation-container').classList.remove('hidden');
+
+      setTimeout(() => {
+        // Render 3D Molecules & Reveal Stimulus
+        document.getElementById('mol-left').innerHTML = renderMoleculeSVG(trial.left);
+        document.getElementById('mol-right').innerHTML = renderMoleculeSVG(trial.right);
+
+        document.getElementById('fixation-container').classList.add('hidden');
+        document.getElementById('stimulus-container').classList.remove('hidden');
+
+        // Start high-precision RT clock
+        trialStartTime = performance.now();
+        isAcceptingInput = true;
+
+        // Countdown animation
+        timerInterval = setInterval(() => {
+          const elapsed = performance.now() - trialStartTime;
+          const remaining = Math.max(0, TRIAL_TIME_LIMIT_MS - elapsed);
+          const pct = (remaining / TRIAL_TIME_LIMIT_MS) * 100;
+
+          timerBar.style.width = `${pct}%`;
+          document.getElementById('timer-text').textContent = `${(remaining / 1000).toFixed(1)}s`;
+
+          if (pct < 25) {
+            timerBar.classList.remove('bg-indigo-600', 'bg-amber-500');
+            timerBar.classList.add('bg-rose-600');
+          } else if (pct < 50) {
+            timerBar.classList.remove('bg-indigo-600');
+            timerBar.classList.add('bg-amber-500');
+          }
+        }, 40);
+
+        // Hard deadline timeout
+        trialTimeout = setTimeout(() => {
+          if (isAcceptingInput) {
+            handleResponse('timeout');
+          }
+        }, TRIAL_TIME_LIMIT_MS);
+
+      }, FIXATION_DURATION_MS);
+    }
+
+    /**
+     * RECORD PARTICIPANT RESPONSE & ADVANCE
+     */
+    function handleResponse(responseType) {
+      if (!isAcceptingInput) return;
+      isAcceptingInput = false;
+
+      clearInterval(timerInterval);
+      clearTimeout(trialTimeout);
+
+      const rt = responseType === 'timeout'
+        ? TRIAL_TIME_LIMIT_MS
+        : Math.round(performance.now() - trialStartTime);
+
+      const trial = TRIALS[currentTrialIndex];
+      const isCorrect = responseType === trial.relation;
+
+      experimentResults.push({
+        participant_hash: participantHash,
+        trial_index: trial.id,
+        stimulus_label: trial.label,
+        true_relation: trial.relation,
+        participant_response: responseType,
+        correct: isCorrect,
+        rt_ms: rt,
+        timestamp_iso: new Date().toISOString()
+      });
+
+      currentTrialIndex++;
+      runNextTrial();
+    }
+
+    /**
+     * FINISH EXPERIMENT, LOCK BROWSER, & DISPLAY RESULTS
+     */
+    function finishExperiment() {
+      // Lock browser against immediate retakes
+      localStorage.setItem(STORAGE_KEY_LOCK, 'true');
+      localStorage.setItem(STORAGE_KEY_HASH, participantHash);
+
+      showScreen('screen-results', 'COMPLETED & LOGGED');
+      document.getElementById('result-hash').textContent = participantHash;
+
+      // Compute summary metrics
+      const totalTrials = experimentResults.length;
+      const correctCount = experimentResults.filter(r => r.correct).length;
+      const validResponses = experimentResults.filter(r => r.participant_response !== 'timeout');
+      const meanRT = validResponses.length > 0
+        ? Math.round(validResponses.reduce((sum, r) => sum + r.rt_ms, 0) / validResponses.length)
+        : 0;
+
+      document.getElementById('metric-accuracy').textContent = `${Math.round((correctCount / totalTrials) * 100)}%`;
+      document.getElementById('metric-rt').textContent = validResponses.length > 0 ? `${meanRT} ms` : 'N/A';
+      document.getElementById('metric-valid').textContent = `${validResponses.length} / ${totalTrials}`;
+
+      // Populate trial data table
+      const tbody = document.getElementById('results-table-body');
+      tbody.innerHTML = '';
+
+      experimentResults.forEach(row => {
+        const tr = document.createElement('tr');
+        tr.className = 'hover:bg-slate-50/80';
+        const statusBadge = row.correct
+          ? '<span class="px-2 py-0.5 rounded-full bg-emerald-50 text-emerald-700 border border-emerald-200 font-semibold">TRUE</span>'
+          : '<span class="px-2 py-0.5 rounded-full bg-rose-50 text-rose-700 border border-rose-200 font-semibold">FALSE</span>';
+
+        tr.innerHTML = `
+          <td class="py-3 px-4 text-slate-700 font-medium">${row.trial_index}</td>
+          <td class="py-3 px-4 text-slate-600 font-sans">${row.stimulus_label}</td>
+          <td class="py-3 px-4 text-slate-700">${row.true_relation}</td>
+          <td class="py-3 px-4 text-slate-700">${row.participant_response}</td>
+          <td class="py-3 px-4">${statusBadge}</td>
+          <td class="py-3 px-4 text-right text-slate-700">${row.rt_ms}</td>
+        `;
+        tbody.appendChild(tr);
+      });
+    }
+
+    /**
+     * EXPORT RESULTS AS DATAPIPE-COMPATIBLE CSV
+     */
+    function downloadCSV() {
+      if (!experimentResults.length) return;
+      const headers = Object.keys(experimentResults[0]);
+      const csvRows = [
+        headers.join(','),
+        ...experimentResults.map(row =>
+          headers.map(fieldName => `"${String(row[fieldName]).replace(/"/g, '""')}"`).join(',')
+        )
+      ];
+      const csvContent = csvRows.join('\n');
+      const blob = new Blob([csvContent], { type: 'text/csv;charset=utf-8;' });
+      const url = URL.createObjectURL(blob);
+
+      const link = document.createElement('a');
+      link.href = url;
+      link.setAttribute('download', `stereoisomer_task_${participantHash.slice(0, 12)}.csv`);
+      document.body.appendChild(link);
+      link.click();
+      document.body.removeChild(link);
+      URL.revokeObjectURL(url);
+    }
+
+    /**
+     * DEMO HELPER: RESET LOCALSTORAGE LOCK
+     */
+    function resetDemoLock() {
+      clearInterval(timerInterval);
+      clearTimeout(trialTimeout);
+      isAcceptingInput = false;
+      localStorage.removeItem(STORAGE_KEY_LOCK);
+      localStorage.removeItem(STORAGE_KEY_HASH);
+      document.getElementById('student-email').value = '';
+      document.getElementById('hash-preview').textContent = 'Type an email above to preview your anonymized hash...';
+      showScreen('screen-gatekeeper', 'PARTICIPANT GATEKEEPER');
+    }
+  </script>
+</body>
+</html>
