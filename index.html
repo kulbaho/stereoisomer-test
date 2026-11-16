@@ -363,7 +363,7 @@
     /**
      * CONFIGURATION & STATE
      */
-    const DATAPIPE_EXPERIMENT_ID = 'YOUR_DATAPIPE_EXPERIMENT_ID_HERE'; // Optional: paste DataPipe ID to auto-upload CSV to Google Drive
+    const DATAPIPE_EXPERIMENT_ID = '9gf9khxNyNHZ'; // Optional: paste DataPipe ID to auto-upload CSV to Google Drive
     const STORAGE_KEY_LOCK = 'stereoisomer_demo_completed_v1';
     const STORAGE_KEY_HASH = 'stereoisomer_demo_hash_v1';
     const TRIAL_TIME_LIMIT_MS = 5000; // 5 seconds per trial
@@ -766,7 +766,7 @@
       showScreen('screen-results', 'RESULTS & EXPORT');
 
       // Optional automatic upload to DataPipe if configured
-      if (DATAPIPE_EXPERIMENT_ID && DATAPIPE_EXPERIMENT_ID !== 'YOUR_DATAPIPE_EXPERIMENT_ID_HERE') {
+      if (DATAPIPE_EXPERIMENT_ID && DATAPIPE_EXPERIMENT_ID !== '9gf9khxNyNHZ') {
         const statusEl = document.getElementById('datapipe-status');
         statusEl.classList.remove('hidden');
         statusEl.className = 'text-xs mt-1.5 font-medium text-indigo-600';
